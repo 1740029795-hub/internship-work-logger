@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% block title %}日报列表 — 实习工作记录器{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>📋 日报列表</h2>
+        <p>共 {{ total }} 篇日报</p>
+    </div>
+    <div>
+        <a href="{{ url_for('daily_create') }}" class="btn btn-primary">✏️ 写日报</a>
+    </div>
+</div>
+
+<!-- 筛选栏 -->
+<div class="card">
+    <form method="GET" action="{{ url_for('daily_list') }}">
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">开始日期</label>
+                <input type="date" name="date_from" class="form-input" value="{{ date_from }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">结束日期</label>
+                <input type="date" name="date_to" class="form-input" value="{{ date_to }}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">标签筛选</label>
+                <select name="tag" class="form-select">
+                    <option value="">全部标签</option>
+                    {% for t in all_tags %}
+                    <option value="{{ t }}" {{ 'selected' if tag_filter == t }}>{{ t }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">关键词搜索</label>
+                <input type="text" name="search" class="form-input" value="{{ search }}" placeholder="搜索标题或内容...">
+            </div>
+        </div>
+        <div style="display:flex; gap:10px;">
+            <button type="submit" class="btn btn-primary">🔍 筛选</button>
+            <a href="{{ url_for('daily_list') }}" class="btn btn-ghost">清除筛选</a>
+        </div>
+    </form>
+</div>
+
+<!-- 日报表格 -->
+<div class="card">
+    {% if entries %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>日期</th>
+                    <th>标题</th>
+                    <th>时长</th>
+                    <th>标签</th>
+                    <th>心情</th>
+                    <th>类型</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td>
+                        <a href="{{ url_for('daily_edit', date_str=entry.entry_date) }}" style="font-weight:600;">
+                            {{ entry.entry_date }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="{{ url_for('daily_edit', date_str=entry.entry_date) }}" style="color:var(--text);">
+                            {{ entry.title[:30] or '（无标题）' }}
+                            {% if entry.title|length > 30 %}...{% endif %}
+                        </a>
+                    </td>
+                    <td>{{ entry.work_hours }}h</td>
+                    <td>
+                        {% if entry.tags %}
+                            {% for t in entry.tags.split(',')[:3] %}
+                            <span class="tag-chip">{{ t.strip()[:10] }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span style="color:var(--text-muted)">—</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span style="font-size:18px;">
+                            {{ ['😫','😐','😊','😄','🤩'][entry.mood-1] if 1<=entry.mood<=5 else '😊' }}
+                        </span>
+                    </td>
+                    <td>
+                        <span class="badge {{ 'badge-workday' if entry.is_workday else 'badge-restday' }}">
+                            {{ '工作' if entry.is_workday else '休息' }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <a href="{{ url_for('daily_edit', date_str=entry.entry_date) }}" class="btn btn-outline btn-sm">编辑</a>
+                            <button type="button" class="btn btn-danger btn-sm"
+                                    onclick="confirmDelete('{{ url_for('daily_delete', date_str=entry.entry_date) }}', '确定要删除 {{ entry.entry_date }} 的日报吗？')">
+                                删除
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    <!-- 分页 -->
+    {% if total_pages > 1 %}
+    <div class="pagination">
+        <a href="{{ url_for('daily_list', page=1, date_from=date_from, date_to=date_to, search=search, tag=tag_filter) }}"
+           class="page-link {{ 'disabled' if page <= 1 }}">首页</a>
+        <a href="{{ url_for('daily_list', page=page-1, date_from=date_from, date_to=date_to, search=search, tag=tag_filter) }}"
+           class="page-link {{ 'disabled' if page <= 1 }}">‹</a>
+
+        {% for p in page_range %}
+        <a href="{{ url_for('daily_list', page=p, date_from=date_from, date_to=date_to, search=search, tag=tag_filter) }}"
+           class="page-link {{ 'active' if p == page }}">{{ p }}</a>
+        {% endfor %}
+
+        <a href="{{ url_for('daily_list', page=page+1, date_from=date_from, date_to=date_to, search=search, tag=tag_filter) }}"
+           class="page-link {{ 'disabled' if page >= total_pages }}">›</a>
+        <a href="{{ url_for('daily_list', page=total_pages, date_from=date_from, date_to=date_to, search=search, tag=tag_filter) }}"
+           class="page-link {{ 'disabled' if page >= total_pages }}">末页</a>
+        <span class="page-info">{{ page }} / {{ total_pages }} 页</span>
+    </div>
+    {% endif %}
+
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📭</div>
+        <h3>没有找到日报</h3>
+        <p>
+            {% if search or date_from or date_to or tag_filter %}
+            没有匹配筛选条件的日报，<a href="{{ url_for('daily_list') }}">清除筛选</a>
+            {% else %}
+            还没有写日报，<a href="{{ url_for('daily_create') }}">去写第一篇</a>
+            {% endif %}
+        </p>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

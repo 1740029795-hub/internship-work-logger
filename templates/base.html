@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}实习工作记录器{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    {% block head_extra %}{% endblock %}
+</head>
+<body>
+    <!-- 侧边栏导航 -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-icon">📋</div>
+            <div class="brand-text">
+                <h1>实习工作记录器</h1>
+                <span class="brand-subtitle">顶岗实习助手</span>
+            </div>
+        </div>
+
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('index') }}" class="nav-item {{ 'active' if request.path == '/' }}">
+                <span class="nav-icon">📊</span>
+                <span>工作台</span>
+            </a>
+            <a href="{{ url_for('daily_create') }}" class="nav-item {{ 'active' if request.path == '/daily/create' }}">
+                <span class="nav-icon">✏️</span>
+                <span>写日报</span>
+                {% if app_settings._today_has_entry %}
+                <span class="nav-badge" title="今日已记录">✅</span>
+                {% endif %}
+            </a>
+            <a href="{{ url_for('daily_list') }}" class="nav-item {{ 'active' if request.path == '/daily/list' }}">
+                <span class="nav-icon">📋</span>
+                <span>日报列表</span>
+            </a>
+            <a href="{{ url_for('daily_calendar') }}" class="nav-item {{ 'active' if request.path == '/daily/calendar' }}">
+                <span class="nav-icon">📅</span>
+                <span>日历视图</span>
+            </a>
+
+            <div class="nav-divider"></div>
+
+            <a href="{{ url_for('report_weekly') }}" class="nav-item {{ 'active' if request.path.startswith('/report/weekly') }}">
+                <span class="nav-icon">📝</span>
+                <span>周报</span>
+            </a>
+            <a href="{{ url_for('report_monthly') }}" class="nav-item {{ 'active' if request.path.startswith('/report/monthly') }}">
+                <span class="nav-icon">📄</span>
+                <span>月报</span>
+            </a>
+            <a href="{{ url_for('report_annual') }}" class="nav-item {{ 'active' if request.path.startswith('/report/annual') }}">
+                <span class="nav-icon">📘</span>
+                <span>年报</span>
+            </a>
+
+            <div class="nav-divider"></div>
+
+            <a href="{{ url_for('settings_page') }}" class="nav-item {{ 'active' if request.path == '/settings' }}">
+                <span class="nav-icon">⚙️</span>
+                <span>设置</span>
+            </a>
+        </nav>
+
+        {% if app_settings and app_settings.student_name %}
+        <div class="sidebar-footer">
+            <div class="sidebar-user">
+                <span class="user-avatar">👤</span>
+                <div>
+                    <div class="user-name">{{ app_settings.student_name }}</div>
+                    <div class="user-role">{{ app_settings.position or '实习生' }}</div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </aside>
+
+    <!-- 主内容区 -->
+    <main class="main-content">
+        <!-- Flash 消息 -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+        <div class="toast-container">
+            {% for category, message in messages %}
+            <div class="toast toast-{{ category }}" data-auto-dismiss="true">
+                <span class="toast-icon">{{ '✅' if category == 'success' else '❌' if category == 'error' else 'ℹ️' }}</span>
+                <span>{{ message }}</span>
+                <button class="toast-close" onclick="this.parentElement.remove()">&times;</button>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+    </main>
+
+    <!-- 自定义确认弹窗 -->
+    <div class="modal-overlay" id="confirm-modal" style="display:none;">
+        <div class="modal">
+            <div class="modal-icon">⚠️</div>
+            <h3 id="confirm-title">确认操作</h3>
+            <p id="confirm-message">确定要执行此操作吗？</p>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" id="confirm-cancel">取消</button>
+                <button class="btn btn-danger" id="confirm-ok">确认</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 加载遮罩 -->
+    <div class="loading-overlay" id="loading-overlay" style="display:none;">
+        <div class="loading-spinner">
+            <div class="spinner"></div>
+            <p id="loading-text">处理中...</p>
+        </div>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

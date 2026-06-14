@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+{% block title %}周报 — 实习工作记录器{% endblock %}
+
+{% block content %}
+{% if view_detail %}
+{# ========== 查看/编辑具体某篇周报 ========== #}
+<div class="page-header">
+    <div>
+        <h2>📝 周报</h2>
+        <p>{{ report.week_start }} 至 {{ report.week_end }} · 第 {{ report.week_number }} 周
+           <span class="badge {{ 'badge-finalized' if report.is_finalized else 'badge-draft' }}">
+               {{ '已定稿' if report.is_finalized else '草稿' }}
+           </span>
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('report_weekly') }}" class="btn btn-outline">← 返回列表</a>
+        <a href="{{ url_for('export_word', report_type='weekly', report_id=report.id) }}" class="btn btn-outline">📥 Word</a>
+        <a href="{{ url_for('export_pdf', report_type='weekly', report_id=report.id) }}" class="btn btn-outline">📥 PDF</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="POST">
+        <div class="report-sections">
+            <div class="section">
+                <h3>📋 本周摘要</h3>
+                <textarea name="summary" rows="4">{{ report.summary }}</textarea>
+            </div>
+            <div class="section">
+                <h3>⭐ 工作亮点</h3>
+                <textarea name="work_highlights" rows="8">{{ report.work_highlights }}</textarea>
+            </div>
+            <div class="section">
+                <h3>📅 下周计划</h3>
+                <textarea name="next_week_plan" rows="6">{{ report.next_week_plan }}</textarea>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:16px; padding-top:16px; border-top:1px solid var(--border-light);">
+            <button type="submit" class="btn btn-primary">💾 保存修改</button>
+            <button type="submit" name="is_finalized" value="1" class="btn btn-success">
+                ✅ 定稿
+            </button>
+        </div>
+    </form>
+</div>
+
+<!-- 该周的日报 -->
+{% if dailies %}
+<div class="card">
+    <div class="card-header">
+        <span class="card-title">📄 本周日报 ({{ dailies|length }} 篇)</span>
+    </div>
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr><th>日期</th><th>标题</th><th>时长</th><th>心情</th></tr>
+            </thead>
+            <tbody>
+                {% for d in dailies %}
+                <tr>
+                    <td><a href="{{ url_for('daily_edit', date_str=d.entry_date) }}">{{ d.entry_date }}</a></td>
+                    <td>{{ d.title or '（无标题）' }}</td>
+                    <td>{{ d.work_hours }}h</td>
+                    <td>{{ ['😫','😐','😊','😄','🤩'][d.mood-1] if 1<=d.mood<=5 else '—' }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endif %}
+
+{% else %}
+{# ========== 周报列表 ========== #}
+<div class="page-header">
+    <div>
+        <h2>📝 周报</h2>
+        <p>共 {{ weeks|length }} 个实习周</p>
+    </div>
+</div>
+
+<div class="card">
+    {% if weeks %}
+    <div class="table-container">
+        <table>
+            <thead>
+                <tr>
+                    <th>周次</th>
+                    <th>日期范围</th>
+                    <th>ISO 周</th>
+                    <th>状态</th>
+                    <th>操作</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for w in weeks %}
+                <tr>
+                    <td><strong>第 {{ w.week_number }} 周</strong></td>
+                    <td>{{ w.week_start }} 至 {{ w.week_end }}</td>
+                    <td>{{ w.label }}</td>
+                    <td>
+                        <span class="badge {{ 'badge-finalized' if w.has_report else 'badge-draft' }}">
+                            {{ '已生成' if w.has_report else '未生成' }}
+                        </span>
+                    </td>
+                    <td>
+                        <div class="actions">
+                            {% if w.has_report and w.report_id %}
+                            <a href="{{ url_for('report_weekly_detail', report_id=w.report_id) }}" class="btn btn-outline btn-sm">查看/编辑</a>
+                            {% endif %}
+                            <form method="POST" action="{{ url_for('report_weekly_generate') }}" style="display:inline;">
+                                <input type="hidden" name="week_start" value="{{ w.week_start }}">
+                                <button type="submit" class="btn btn-primary btn-sm">
+                                    {{ '重新生成' if w.has_report else '生成周报' }}
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📝</div>
+        <h3>暂无周报</h3>
+        <p>请先在<a href="{{ url_for('settings_page') }}">设置</a>中配置实习起止日期，然后填写日报</p>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

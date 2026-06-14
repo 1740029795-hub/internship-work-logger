@@ -1,0 +1,182 @@
+{% extends "base.html" %}
+{% block title %}工作台 — 实习工作记录器{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>📊 工作台</h2>
+        <p>欢迎回来，{{ app_settings.student_name or '实习生' }} · {{ today }}</p>
+    </div>
+    <div>
+        <a href="{{ url_for('daily_create') }}" class="btn btn-primary btn-lg">✏️ 写日报</a>
+    </div>
+</div>
+
+{% if not app_settings.start_date %}
+<div class="card" style="border-left:4px solid var(--warning); background:var(--warning-bg);">
+    <div style="display:flex; align-items:center; gap:12px;">
+        <span style="font-size:24px;">⚠️</span>
+        <div style="flex:1;">
+            <strong>初次使用，请先完成设置</strong>
+            <p style="margin:4px 0 0; color:var(--text-secondary); font-size:13px;">
+                请先前往<a href="{{ url_for('settings_page') }}">设置页面</a>填写实习基本信息（姓名、单位、起止日期等），然后开始记录日报。
+            </p>
+        </div>
+        <a href="{{ url_for('settings_page') }}" class="btn btn-primary">去设置 →</a>
+    </div>
+</div>
+{% endif %}
+
+<!-- 统计卡片 -->
+<div class="stats-row">
+    <div class="stat-card">
+        <div class="stat-icon blue">📋</div>
+        <div>
+            <div class="stat-value">{{ total_dailies }}</div>
+            <div class="stat-label">累计日报</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon green">🔥</div>
+        <div>
+            <div class="stat-value">{{ streak }}</div>
+            <div class="stat-label">连续打卡天数</div>
+            {% if streak >= 7 %}
+            <div class="stat-sub" style="color:var(--success);">🎉 保持得很好！</div>
+            {% endif %}
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon orange">⏱️</div>
+        <div>
+            <div class="stat-value">{{ week_hours }}<span style="font-size:16px;font-weight:400">h</span></div>
+            <div class="stat-label">本周工时</div>
+            <div class="stat-sub">本月累计 {{ month_hours }}h</div>
+        </div>
+    </div>
+    <div class="stat-card">
+        <div class="stat-icon purple">🎯</div>
+        <div>
+            <div class="stat-value">{{ progress_pct }}%</div>
+            <div class="stat-label">实习进度 · 剩余 {{ remaining_days }} 天</div>
+            <div class="progress-bar" style="margin-top:6px">
+                <div class="progress-fill" style="width:{{ progress_pct }}%"></div>
+            </div>
+        </div>
+    </div>
+    {% if workdays_this_month > 0 %}
+    <div class="stat-card">
+        <div class="stat-icon red">💼</div>
+        <div>
+            <div class="stat-value">{{ workdays_this_month }}</div>
+            <div class="stat-label">本月工作天数</div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- 快速写日报 + 最近记录 -->
+<div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">⚡ 快速写日报</span>
+        </div>
+        <form method="POST" action="{{ url_for('daily_create') }}">
+            <input type="hidden" name="entry_date" value="{{ today }}">
+            <div class="form-group">
+                <label class="form-label">日期</label>
+                <input type="text" class="form-input" value="{{ today }}" disabled>
+            </div>
+            <div class="form-group">
+                <label class="form-label">今日标题</label>
+                <input type="text" name="title" class="form-input" placeholder="例如：学习 React 组件开发">
+            </div>
+            <div class="form-group">
+                <label class="form-label">工作内容 <span class="required">*</span></label>
+                <textarea name="content" class="form-textarea" rows="3" placeholder="今天做了什么..." required></textarea>
+            </div>
+            <div class="form-row">
+                <div class="form-group">
+                    <label class="form-label">工作时长 (小时)</label>
+                    <input type="number" name="work_hours" class="form-input" value="8" step="0.5" min="0" max="24">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">今日心情</label>
+                    <div class="mood-selector">
+                        {% for i in range(1,6) %}
+                        <div class="mood-option {% if i==3 %}selected{% endif %}" data-value="{{ i }}">
+                            {{ ['😫','😐','😊','😄','🤩'][i-1] }}
+                        </div>
+                        {% endfor %}
+                    </div>
+                    <input type="hidden" name="mood" id="mood-input" value="3">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width:100%">💾 保存日报</button>
+        </form>
+    </div>
+
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📝 最近日报</span>
+            <a href="{{ url_for('daily_list') }}" class="btn btn-ghost btn-sm">查看全部 →</a>
+        </div>
+        {% if recent %}
+        <div style="display:flex; flex-direction:column; gap:8px;">
+            {% for entry in recent %}
+            <a href="{{ url_for('daily_edit', date_str=entry.entry_date) }}"
+               style="display:flex; align-items:center; justify-content:space-between; padding:10px 12px;
+                      background:#fafbfc; border-radius:8px; text-decoration:none; color:var(--text);
+                      transition:background 0.15s;"
+               onmouseover="this.style.background='var(--accent-light)'"
+               onmouseout="this.style.background='#fafbfc'">
+                <div style="flex:1; min-width:0;">
+                    <div style="font-weight:600; margin-bottom:2px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">
+                        {{ entry.title or '无标题' }}
+                    </div>
+                    <div style="font-size:12px; color:var(--text-secondary);">
+                        {{ entry.entry_date }} · {{ entry.work_hours }}h
+                        {% if entry.tags %}<span style="color:var(--accent)"> · {{ entry.tags[:30] }}</span>{% endif %}
+                    </div>
+                </div>
+                <div style="font-size:20px; flex-shrink:0; margin-left:12px;">
+                    {{ ['😫','😐','😊','😄','🤩'][entry.mood-1] if 1<=entry.mood<=5 else '😊' }}
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📭</div>
+            <h3>还没有日报记录</h3>
+            <p>点击左侧「写日报」开始记录你的实习生活吧</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- 本周概览 -->
+<div class="card" style="margin-top:20px;">
+    <div class="card-header">
+        <span class="card-title">📅 本周概览</span>
+        <a href="{{ url_for('daily_calendar') }}" class="btn btn-ghost btn-sm">日历视图 →</a>
+    </div>
+    <div class="week-overview">
+        {% for day in week_days %}
+        <a href="{% if day.has_entry %}{{ url_for('daily_edit', date_str=day.date) }}{% else %}{{ url_for('daily_create', date=day.date) }}{% endif %}"
+           class="week-day-card {{ 'today' if day.is_today }}"
+           style="text-decoration:none; color:inherit;">
+            <div class="day-name">{{ day.weekday }}</div>
+            <div class="day-date">{{ day.date[-5:] }}</div>
+            <div class="day-status">
+                {% if day.has_entry %}
+                    {{ ['😫','😐','😊','😄','🤩'][day.mood-1] if day.mood and 1<=day.mood<=5 else '✅' }}
+                {% else %}
+                    <span style="opacity:0.3">⬜</span>
+                {% endif %}
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

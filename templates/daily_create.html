@@ -1,0 +1,141 @@
+{% extends "base.html" %}
+{% block title %}{{ '编辑日报' if entry else '写日报' }} — 实习工作记录器{% endblock %}
+
+{% block content %}
+{% set is_edit = entry is not none %}
+
+<div class="page-header">
+    <div>
+        <h2>{{ '✏️ 编辑日报' if is_edit else '✏️ 写日报' }}</h2>
+        <p>{{ entry.entry_date if is_edit else prefilled_date }} · 记录今天的实习内容</p>
+    </div>
+    <div>
+        <a href="{{ url_for('daily_list') }}" class="btn btn-outline">← 返回列表</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="POST" id="daily-form"
+          action="{% if is_edit %}{{ url_for('daily_edit', date_str=entry.entry_date) }}{% else %}{{ url_for('daily_create') }}{% endif %}">
+
+        <!-- 日期 -->
+        <div class="form-group">
+            <label class="form-label">日期 <span class="required">*</span></label>
+            {% if is_edit %}
+            <input type="text" class="form-input" value="{{ entry.entry_date }}" disabled>
+            <input type="hidden" name="entry_date" value="{{ entry.entry_date }}">
+            {% else %}
+            <input type="date" name="entry_date" class="form-input" value="{{ prefilled_date }}" required>
+            {% endif %}
+        </div>
+
+        <!-- 标题 + 工作时长 -->
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">今日标题</label>
+                <input type="text" name="title" class="form-input"
+                       value="{{ entry.title if is_edit else '' }}"
+                       placeholder="例如：学习 Python Flask 框架">
+            </div>
+            <div class="form-group">
+                <label class="form-label">工作时长 (小时)</label>
+                <input type="number" name="work_hours" class="form-input"
+                       value="{{ entry.work_hours if is_edit else '8' }}"
+                       step="0.5" min="0" max="24">
+            </div>
+        </div>
+
+        <!-- 工作内容 -->
+        <div class="form-group">
+            <label class="form-label">工作内容 <span class="required">*</span></label>
+            <textarea name="content" class="form-textarea" rows="6"
+                      placeholder="今天做了什么工作？学到了什么？..." required>{{ entry.content if is_edit else '' }}</textarea>
+        </div>
+
+        <!-- 完成任务 + 明日计划 -->
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">完成的任务</label>
+                <textarea name="tasks_completed" class="form-textarea" rows="4"
+                          placeholder="一行一个任务">{{ entry.tasks_completed if is_edit else '' }}</textarea>
+                <span class="form-hint">每行一个已完成的任务</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">明日计划</label>
+                <textarea name="tasks_planned" class="form-textarea" rows="4"
+                          placeholder="明天计划做什么...">{{ entry.tasks_planned if is_edit else '' }}</textarea>
+                <span class="form-hint">每行一个计划任务</span>
+            </div>
+        </div>
+
+        <!-- 困难 + 收获 -->
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">遇到的问题 / 困难</label>
+                <textarea name="challenges" class="form-textarea" rows="3"
+                          placeholder="遇到了什么困难...">{{ entry.challenges if is_edit else '' }}</textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">学到的知识 / 技能</label>
+                <textarea name="learnings" class="form-textarea" rows="3"
+                          placeholder="今天学到了什么...">{{ entry.learnings if is_edit else '' }}</textarea>
+            </div>
+        </div>
+
+        <!-- 标签 + 心情 -->
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">标签</label>
+                <div class="tag-input-wrapper">
+                    {% set tags_val = entry.tags if is_edit else '' %}
+                    <input type="hidden" name="tags" id="tags-hidden" value="{{ tags_val }}">
+                    <input type="text" class="tag-input-real" placeholder="输入标签后按回车添加...">
+                </div>
+                <span class="form-hint">按回车或逗号添加标签</span>
+            </div>
+            <div class="form-group">
+                <label class="form-label">今日心情</label>
+                <div class="mood-selector">
+                    {% set mood_val = entry.mood if is_edit else 3 %}
+                    {% for i in range(1,6) %}
+                    <div class="mood-option {{ 'selected' if mood_val == i }}" data-value="{{ i }}">
+                        {{ ['😫','😐','😊','😄','🤩'][i-1] }}
+                    </div>
+                    {% endfor %}
+                </div>
+                <input type="hidden" name="mood" id="mood-input" value="{{ mood_val }}">
+            </div>
+        </div>
+
+        <!-- 是否工作日 -->
+        <div class="form-group">
+            <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                <input type="checkbox" name="is_workday"
+                       {{ 'checked' if not is_edit or entry.is_workday else '' }}>
+                <span style="font-size:14px;">标记为工作日</span>
+            </label>
+        </div>
+
+        <!-- 操作按钮 -->
+        <div style="display:flex; gap:10px; margin-top:20px; padding-top:16px; border-top:1px solid var(--border-light);">
+            <button type="submit" class="btn btn-primary btn-lg">💾 保存日报</button>
+            <a href="{{ url_for('daily_list') }}" class="btn btn-ghost btn-lg">取消</a>
+            {% if is_edit %}
+            <span class="spacer" style="flex:1"></span>
+            <button type="button" class="btn btn-danger"
+                    onclick="confirmDelete('{{ url_for('daily_delete', date_str=entry.entry_date) }}', '确定要删除 {{ entry.entry_date }} 的日报吗？')">
+                🗑 删除
+            </button>
+            {% endif %}
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/daily.js') }}"></script>
+<script>
+    // 自动保存草稿
+    autosaveDaily('#daily-form', 'daily-draft-{{ 'edit-' + entry.entry_date if is_edit else 'create' }}');
+</script>
+{% endblock %}

@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}日历视图 — 实习工作记录器{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>📅 日历视图</h2>
+        <p id="calendar-subtitle">点击日期查看/编辑日报 · 使用 ← → 键切换月份</p>
+    </div>
+    <div>
+        <a href="{{ url_for('daily_create') }}" class="btn btn-primary">✏️ 写日报</a>
+    </div>
+</div>
+
+<div class="card">
+    <!-- 月份导航 -->
+    <div class="calendar-nav">
+        <div class="nav-group">
+            <button class="btn btn-outline btn-sm" id="btn-prev">◀ 上月</button>
+            <button class="btn btn-ghost btn-sm" id="btn-today">今天</button>
+            <button class="btn btn-outline btn-sm" id="btn-next">下月 ▶</button>
+        </div>
+        <h3 id="cal-title">{{ year }}年 {{ month }}月</h3>
+        <div style="width:160px;"></div> <!-- 占位保持居中 -->
+    </div>
+
+    <!-- 月度统计 -->
+    <div class="calendar-stats" id="calendar-stats">
+        <span>📝 加载中...</span>
+    </div>
+
+    <!-- 日历网格 -->
+    <div class="calendar-grid" id="calendar-grid">
+        <!-- JS 动态渲染 -->
+    </div>
+
+    <!-- 选中日期信息 -->
+    <div id="selected-info" style="margin-top:16px; padding:12px; background:#fafbfc; border-radius:8px; display:none;">
+        <div style="display:flex; align-items:center; justify-content:space-between;">
+            <div>
+                <strong id="sel-date">—</strong>
+                <span id="sel-summary" style="color:var(--text-secondary); margin-left:12px;"></span>
+            </div>
+            <div>
+                <a id="sel-edit-btn" class="btn btn-outline btn-sm" href="#">编辑日报</a>
+                <a id="sel-create-btn" class="btn btn-primary btn-sm" href="#">写日报</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script src="{{ url_for('static', filename='js/calendar.js') }}"></script>
+<script>
+    var cal = new Calendar({{ year }}, {{ month }}, {{ week_start_day }});
+    cal.render();
+</script>
+{% endblock %}

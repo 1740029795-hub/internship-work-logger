@@ -1,0 +1,98 @@
+{% extends "base.html" %}
+{% block title %}月报 — 实习工作记录器{% endblock %}
+
+{% block content %}
+{% if view_detail %}
+{# ========== 查看/编辑具体某篇月报 ========== #}
+<div class="page-header">
+    <div>
+        <h2>📄 月报</h2>
+        <p>{{ report.report_year }}年{{ report.report_month }}月
+           <span class="badge {{ 'badge-finalized' if report.is_finalized else 'badge-draft' }}">
+               {{ '已定稿' if report.is_finalized else '草稿' }}
+           </span>
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('report_monthly') }}" class="btn btn-outline">← 返回列表</a>
+        <a href="{{ url_for('export_word', report_type='monthly', report_id=report.id) }}" class="btn btn-outline">📥 Word</a>
+        <a href="{{ url_for('export_pdf', report_type='monthly', report_id=report.id) }}" class="btn btn-outline">📥 PDF</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="POST">
+        <div class="report-sections">
+            <div class="section">
+                <h3>📋 月度总结</h3>
+                <textarea name="summary" rows="4">{{ report.summary }}</textarea>
+            </div>
+            <div class="section">
+                <h3>🏆 主要成果</h3>
+                <textarea name="achievements" rows="8">{{ report.achievements }}</textarea>
+            </div>
+            <div class="section">
+                <h3>💡 技能收获</h3>
+                <textarea name="skills_gained" rows="6">{{ report.skills_gained }}</textarea>
+            </div>
+            <div class="section">
+                <h3>🔍 反思与不足</h3>
+                <textarea name="reflection" rows="6">{{ report.reflection }}</textarea>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:16px; padding-top:16px; border-top:1px solid var(--border-light);">
+            <button type="submit" class="btn btn-primary">💾 保存修改</button>
+            <button type="submit" name="is_finalized" value="1" class="btn btn-success">
+                ✅ 定稿
+            </button>
+        </div>
+    </form>
+</div>
+
+{% else %}
+{# ========== 月报列表 ========== #}
+<div class="page-header">
+    <div>
+        <h2>📄 月报</h2>
+        <p>共 {{ months|length }} 个实习月份</p>
+    </div>
+</div>
+
+<div class="card">
+    {% if months %}
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">
+        {% for m in months %}
+        <div style="padding:16px; background:#fafbfc; border-radius:var(--radius); border:1px solid var(--border-light);
+                    display:flex; align-items:center; justify-content:space-between;">
+            <div>
+                <strong>{{ m.name }}</strong>
+                <span class="badge {{ 'badge-finalized' if m.has_report else 'badge-draft' }}" style="margin-left:8px;">
+                    {{ '已生成' if m.has_report else '未生成' }}
+                </span>
+            </div>
+            <div class="actions">
+                {% if m.has_report and m.report_id %}
+                <a href="{{ url_for('report_monthly_detail', report_id=m.report_id) }}" class="btn btn-outline btn-sm">查看</a>
+                {% endif %}
+                <form method="POST" action="{{ url_for('report_monthly_generate') }}" style="display:inline;">
+                    <input type="hidden" name="year" value="{{ m.year }}">
+                    <input type="hidden" name="month" value="{{ m.month }}">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        {{ '重新生成' if m.has_report else '生成' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📄</div>
+        <h3>暂无月报</h3>
+        <p>请先在<a href="{{ url_for('settings_page') }}">设置</a>中配置实习起止日期</p>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

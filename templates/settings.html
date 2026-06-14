@@ -1,0 +1,154 @@
+{% extends "base.html" %}
+{% block title %}设置 — 实习工作记录器{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <div>
+        <h2>⚙️ 实习设置</h2>
+        <p>填写你的实习基本信息，这些信息会出现在导出的报告中</p>
+    </div>
+</div>
+
+<form method="POST">
+    <!-- 学生信息 -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">👤 学生信息</span>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">姓名 <span class="required">*</span></label>
+                <input type="text" name="student_name" class="form-input"
+                       value="{{ settings.student_name }}" placeholder="你的姓名" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">学号</label>
+                <input type="text" name="student_id" class="form-input"
+                       value="{{ settings.student_id }}" placeholder="学号">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">学校</label>
+                <input type="text" name="school" class="form-input"
+                       value="{{ settings.school }}" placeholder="学校名称">
+            </div>
+            <div class="form-group">
+                <label class="form-label">专业</label>
+                <input type="text" name="major" class="form-input"
+                       value="{{ settings.major }}" placeholder="所学专业">
+            </div>
+        </div>
+    </div>
+
+    <!-- 实习信息 -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">🏢 实习信息</span>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">实习单位 <span class="required">*</span></label>
+                <input type="text" name="company_name" class="form-input"
+                       value="{{ settings.company_name }}" placeholder="公司/机构名称" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">实习岗位</label>
+                <input type="text" name="position" class="form-input"
+                       value="{{ settings.position }}" placeholder="例如：前端开发实习生">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">部门</label>
+                <input type="text" name="department" class="form-input"
+                       value="{{ settings.department }}" placeholder="所在部门">
+            </div>
+            <div class="form-group">
+                <label class="form-label">指导老师 / 导师</label>
+                <input type="text" name="mentor_name" class="form-input"
+                       value="{{ settings.mentor_name }}" placeholder="企业导师或学校指导老师">
+            </div>
+        </div>
+    </div>
+
+    <!-- 实习时间 -->
+    <div class="card">
+        <div class="card-header">
+            <span class="card-title">📅 实习时间</span>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">实习开始日期 <span class="required">*</span></label>
+                <input type="date" name="start_date" class="form-input"
+                       value="{{ settings.start_date }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">实习结束日期 <span class="required">*</span></label>
+                <input type="date" name="end_date" class="form-input"
+                       value="{{ settings.end_date }}" required>
+            </div>
+        </div>
+        <div class="form-group">
+            <label class="form-label">每周起始日</label>
+            <select name="weekly_start_day" class="form-select">
+                <option value="0" {{ 'selected' if settings.weekly_start_day == '0' or not settings.weekly_start_day }}>周一 (Mon)</option>
+                <option value="6" {{ 'selected' if settings.weekly_start_day == '6' }}>周日 (Sun)</option>
+            </select>
+            <span class="form-hint">决定周报的起止日期计算方式</span>
+        </div>
+    </div>
+
+    <button type="submit" class="btn btn-primary btn-lg">💾 保存设置</button>
+</form>
+
+<!-- 数据备份与恢复 -->
+<div class="card" style="margin-top:20px;">
+    <div class="card-header">
+        <span class="card-title">💿 数据备份与恢复</span>
+    </div>
+    <div style="display:grid; grid-template-columns: 1fr 1fr; gap:20px;">
+        <!-- 备份 -->
+        <div style="padding:20px; background:#fafbfc; border-radius:var(--radius); border:1px solid var(--border-light);">
+            <h4 style="margin-bottom:8px;">📥 备份数据</h4>
+            <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px;">
+                导出所有日报、周报、月报、年报和设置到 JSON 文件，用于迁移或存档。
+            </p>
+            <a href="{{ url_for('api_backup') }}" class="btn btn-primary" onclick="this.onclick=null;">
+                📥 下载备份文件
+            </a>
+        </div>
+        <!-- 恢复 -->
+        <div style="padding:20px; background:#fafbfc; border-radius:var(--radius); border:1px solid var(--border-light);">
+            <h4 style="margin-bottom:8px;">📤 恢复数据</h4>
+            <p style="font-size:13px; color:var(--text-secondary); margin-bottom:16px;">
+                从之前导出的备份文件中恢复所有数据。<strong style="color:var(--danger);">注意：将覆盖现有数据。</strong>
+            </p>
+            <form method="POST" action="{{ url_for('api_restore') }}" enctype="multipart/form-data"
+                  onsubmit="return confirm('恢复数据将覆盖当前所有记录，确定继续吗？')">
+                <input type="file" name="backup_file" accept=".json" class="form-input"
+                       style="margin-bottom:10px;" required>
+                <button type="submit" class="btn btn-danger btn-sm">📤 恢复数据</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- 快捷键说明 -->
+<div class="card" style="margin-top:20px;">
+    <div class="card-header">
+        <span class="card-title">⌨️ 快捷键</span>
+    </div>
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:8px;">
+        <div style="font-size:13px;"><kbd style="background:#eee; padding:2px 6px; border-radius:3px; font-weight:600;">N</kbd> 写日报</div>
+        <div style="font-size:13px;"><kbd style="background:#eee; padding:2px 6px; border-radius:3px; font-weight:600;">D</kbd> 仪表盘</div>
+        <div style="font-size:13px;"><kbd style="background:#eee; padding:2px 6px; border-radius:3px; font-weight:600;">L</kbd> 日报列表</div>
+        <div style="font-size:13px;"><kbd style="background:#eee; padding:2px 6px; border-radius:3px; font-weight:600;">C</kbd> 日历视图</div>
+        <div style="font-size:13px;"><kbd style="background:#eee; padding:2px 6px; border-radius:3px; font-weight:600;">W</kbd> 周报</div>
+        <div style="font-size:13px;"><kbd style="background:#eee; padding:2px 6px; border-radius:3px; font-weight:600;">M</kbd> 月报</div>
+        <div style="font-size:13px;"><kbd style="background:#eee; padding:2px 6px; border-radius:3px; font-weight:600;">Ctrl+S</kbd> 保存日报</div>
+        <div style="font-size:13px;"><kbd style="background:#eee; padding:2px 6px; border-radius:3px; font-weight:600;">← →</kbd> 切换月份</div>
+    </div>
+    <p style="font-size:12px; color:var(--text-muted); margin-top:8px;">在输入框中输入时，快捷键不会触发。</p>
+</div>
+{% endblock %}

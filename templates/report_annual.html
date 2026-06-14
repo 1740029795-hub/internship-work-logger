@@ -1,0 +1,101 @@
+{% extends "base.html" %}
+{% block title %}年报 — 实习工作记录器{% endblock %}
+
+{% block content %}
+{% if view_detail %}
+{# ========== 查看/编辑具体某篇年报 ========== #}
+<div class="page-header">
+    <div>
+        <h2>📘 年报</h2>
+        <p>{{ report.report_year }}年
+           <span class="badge {{ 'badge-finalized' if report.is_finalized else 'badge-draft' }}">
+               {{ '已定稿' if report.is_finalized else '草稿' }}
+           </span>
+        </p>
+    </div>
+    <div>
+        <a href="{{ url_for('report_annual') }}" class="btn btn-outline">← 返回列表</a>
+        <a href="{{ url_for('export_word', report_type='annual', report_id=report.id) }}" class="btn btn-outline">📥 Word</a>
+        <a href="{{ url_for('export_pdf', report_type='annual', report_id=report.id) }}" class="btn btn-outline">📥 PDF</a>
+    </div>
+</div>
+
+<div class="card">
+    <form method="POST">
+        <div class="report-sections">
+            <div class="section">
+                <h3>📋 年度总结</h3>
+                <textarea name="summary" rows="3">{{ report.summary }}</textarea>
+            </div>
+            <div class="section">
+                <h3>📖 总体回顾</h3>
+                <textarea name="overall_review" rows="8">{{ report.overall_review }}</textarea>
+            </div>
+            <div class="section">
+                <h3>🏗️ 重点项目</h3>
+                <textarea name="key_projects" rows="8">{{ report.key_projects }}</textarea>
+            </div>
+            <div class="section">
+                <h3>🌱 成长总结</h3>
+                <textarea name="growth_summary" rows="6">{{ report.growth_summary }}</textarea>
+            </div>
+            <div class="section">
+                <h3>🔭 未来展望</h3>
+                <textarea name="future_outlook" rows="4">{{ report.future_outlook }}</textarea>
+            </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:16px; padding-top:16px; border-top:1px solid var(--border-light);">
+            <button type="submit" class="btn btn-primary">💾 保存修改</button>
+            <button type="submit" name="is_finalized" value="1" class="btn btn-success">
+                ✅ 定稿
+            </button>
+        </div>
+    </form>
+</div>
+
+{% else %}
+{# ========== 年报列表 ========== #}
+<div class="page-header">
+    <div>
+        <h2>📘 年报</h2>
+        <p>共 {{ years|length }} 个实习年度</p>
+    </div>
+</div>
+
+<div class="card">
+    {% if years %}
+    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap:12px;">
+        {% for y in years %}
+        <div style="padding:16px; background:#fafbfc; border-radius:var(--radius); border:1px solid var(--border-light);
+                    display:flex; align-items:center; justify-content:space-between;">
+            <div>
+                <strong>{{ y.year }}年 实习年报</strong>
+                <span class="badge {{ 'badge-finalized' if y.has_report else 'badge-draft' }}" style="margin-left:8px;">
+                    {{ '已生成' if y.has_report else '未生成' }}
+                </span>
+            </div>
+            <div class="actions">
+                {% if y.has_report and y.report_id %}
+                <a href="{{ url_for('report_annual_detail', report_id=y.report_id) }}" class="btn btn-outline btn-sm">查看</a>
+                {% endif %}
+                <form method="POST" action="{{ url_for('report_annual_generate') }}" style="display:inline;">
+                    <input type="hidden" name="year" value="{{ y.year }}">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        {{ '重新生成' if y.has_report else '生成' }}
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📘</div>
+        <h3>暂无年报</h3>
+        <p>请先在<a href="{{ url_for('settings_page') }}">设置</a>中配置实习起止日期</p>
+    </div>
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}
